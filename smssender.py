@@ -10,6 +10,7 @@ import os
 import syslog
 import sys
 import ConfigParser
+import socket
 
 def logerror(msg):
     syslog.syslog(syslog.LOG_ERR, "SMS SENDER ERROR: %s" % msg)
@@ -36,9 +37,9 @@ new_timestamp = os.fstat(os.open(MESSAGE, os.O_RDONLY)).st_mtime
 
 if not (new_timestamp > timestamp):
     logging("no updates, finishing")
-    #sys.exit(os.EX_OK)
+    sys.exit(os.EX_OK)
 
-print "Found updates"
+#print "Found updates"
 
 # get configuration
 c = ConfigParser.ConfigParser()
@@ -50,12 +51,20 @@ sender = c.get("SMS", "sender")
 
 RECIPIENTS = []
 for line in open(DESTINATIONS).readlines():
+    if line[0] == "#": continue
     line = line.rstrip()
-    name, msisdn = line.split(",")
+    try:
+        name, msisdn = line.split(",")
+    except ValueError:
+        continue
     # maybe some sanitization here for the future
     RECIPIENTS.append("%s@%s" % (msisdn, smsgw))
     
 message = open(MESSAGE).read()
-mail = smtplib.SMTP(smtpgw)
+try:
+    mail = smtplib.SMTP(smtpgw)
+except socket.gaierror:
+    logerror("smtp server %s unreachable" % smtpgw)
+    sys.exit(os.EX_IOERR)
 mail.sendmal(sender, RECIPIENTS, message)
 mail.quit()
