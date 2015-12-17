@@ -28,7 +28,7 @@ for filename in [CONFIG, DESTINATIONS, MESSAGE]:
         logerror("file \"%s\" not found" % filename)
         sys.exit(os.EX_IOERR)
 
-# git update
+# git fetch/checkout to find updates
 timestamp = os.fstat(os.open(MESSAGE, os.O_RDONLY)).st_mtime
 os.chdir(MYPATH)
 os.system("git fetch; git checkout -- message.txt; git checkout -- destination.csv")
@@ -46,5 +46,16 @@ c.read(CONFIG)
 
 smtpgw = c.get("SMS", "smtpgw")
 smsgw = c.get("SMS", "smsgw")
+sender = c.get("SMS", "sender")
 
-# git update
+RECIPIENTS = []
+for line in open(DESTINATIONS).readlines():
+    line = line.rstrip()
+    name, msisdn = line.split(",")
+    # maybe some sanitization here for the future
+    RECIPIENTS.append("%s@%s" % (msisdn, smsgw))
+    
+message = open(MESSAGE).read()
+mail = smtplib.SMTP(smtpgw)
+mail.sendmal(sender, RECIPIENTS, message)
+mail.quit()
