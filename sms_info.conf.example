@@ -1,0 +1,3 @@
+[SMS]
+smtpgw = "myserver.internal.com"
+smsgw = "sms.myserver.internal.com"
